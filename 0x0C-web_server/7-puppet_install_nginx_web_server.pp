@@ -1,25 +1,38 @@
-# Script to install nginx using puppet
+#!/usr/bin/env bash
+# Install and setup new nginx server
 
-package {'nginx':
-  ensure => 'present',
+apt-get update -y && \
+apt-get install -y nginx
+if [ $? -eq 0 ]
+then
+    service nginx start
+    echo -e \
+"http {
+    root /var/www/holberton;
+    server {
+        listen 80;
+        server_name pearmountain.space;
+        error_page 404 /404_file_not_found.html;
+        rewrite ^/redirect_me$ \
+https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;
+        location / {
+            index index.html;
+        }
+        location /404_file_not_found.html {
+            internal;
+        }
+    }
 }
-
-exec {'install':
-  command  => 'sudo apt-get update ; sudo apt-get -y install nginx',
-  provider => shell,
-
-}
-
-exec {'Hello':
-  command  => 'echo "Hello World!" | sudo tee /var/www/html/index.html',
-  provider => shell,
-}
-
-exec {'sudo sed -i "s/listen 80 default_server;/listen 80 default_server;\\n\\tlocation \/redirect_me {\\n\\t\\treturn 301 https:\/\/blog.ehoneahobed.com\/;\\n\\t}/" /etc/nginx/sites-available/default':
-  provider => shell,
-}
-
-exec {'run':
-  command  => 'sudo service nginx restart',
-  provider => shell,
-}
+events {
+}" > /etc/nginx/nginx.conf
+    mkdir -p /var/www/holberton
+    echo "Holberton School" > \
+	/var/www/holberton/index.html
+    echo "Ceci n'est pas une page" > \
+	/var/www/holberton/404_file_not_found.html
+    nginx -s reload
+else
+    echo "Could not install nginx"
+    exit 1
+fi
+exit 0
